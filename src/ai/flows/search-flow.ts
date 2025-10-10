@@ -70,14 +70,11 @@ export async function search(input: SearchInput): Promise<SearchOutput> {
   return searchFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'searchPrompt',
-  input: {schema: SearchInputSchema},
-  tools: [webSearchTool],
-  prompt: `You are a search engine. Given a query, use the webSearch tool to get a list of results. Do not make up results; only use the tool.
+const prompt = `You are a helpful AI assistant that can search the web.
+Use the webSearch tool to answer the user's query.
 
-Query: {{{query}}}`,
-});
+Query: ${"{{query}}"}
+`;
 
 const searchFlow = ai.defineFlow(
   {
@@ -85,12 +82,33 @@ const searchFlow = ai.defineFlow(
     inputSchema: SearchInputSchema,
     outputSchema: SearchOutputSchema,
   },
-  async input => {
-    const llmResponse = await prompt(input);
-    const toolResponse = llmResponse.toolRequest?.tool?.('webSearch')?.output;
+  async (input) => {
+    const llmResponse = await ai.generate({
+      prompt: prompt,
+      model: 'googleai/gemini-1.5-flash-latest',
+      input: input,
+      tools: [webSearchTool],
+    });
+
+    const toolResponse = llmResponse.toolRequest();
     if (toolResponse) {
-      return toolResponse;
+      const toolOutput = await toolResponse.run();
+      return toolOutput as SearchOutput;
     }
+    
+    // If the model doesn't request a tool, we can try to force it.
+    const toolRequest = await ai.generate({
+        prompt: `Return a call to the webSearch tool with the query: ${input.query}`,
+        model: 'googleai/gemini-1.5-flash-latest',
+        tools: [webSearchTool]
+    });
+    
+    const forcedToolResponse = toolRequest.toolRequest();
+    if(forcedToolResponse) {
+        const toolOutput = await forcedToolResponse.run();
+        return toolOutput as SearchOutput;
+    }
+    
     return { results: [] };
   }
 );
