@@ -18,7 +18,7 @@ const AIPoweredPrivacyRecommendationsInputSchema = z.object({
       'A detailed history of the user browsing activity, including websites visited, search queries, and interactions with web content.'
     ),
 });
-export type AIPoweredPrivacyRecommendationsInput = z.infer<typeof AIPoweredPrivacyRecommendationsInputSchema>;
+type AIPoweredPrivacyRecommendationsInput = z.infer<typeof AIPoweredPrivacyRecommendationsInputSchema>;
 
 const AIPoweredPrivacyRecommendationsOutputSchema = z.object({
   recommendations: z
@@ -32,7 +32,7 @@ const AIPoweredPrivacyRecommendationsOutputSchema = z.object({
       'A detailed explanation of why each recommendation is being made, and how it will improve the users privacy.'
     ),
 });
-export type AIPoweredPrivacyRecommendationsOutput = z.infer<typeof AIPoweredPrivacyRecommendationsOutputSchema>;
+type AIPoweredPrivacyRecommendationsOutput = z.infer<typeof AIPoweredPrivacyRecommendationsOutputSchema>;
 
 export async function aiPoweredPrivacyRecommendations(
   input: AIPoweredPrivacyRecommendationsInput
@@ -66,6 +66,3 @@ const aiPoweredPrivacyRecommendationsFlow = ai.defineFlow(
     return output!;
   }
 );
-
-
-

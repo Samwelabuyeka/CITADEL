@@ -1,13 +1,12 @@
 'use server';
 /**
- * @fileOverview A search flow that uses an AI to generate search results.
+ * @fileOverview A search flow that uses a custom AI network to generate search results.
  *
  * - search - A function that handles the search process.
  * - SearchInput - The input type for the search function.
  * - SearchOutput - The return type for the search function.
  */
 
-import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const SearchResultItemSchema = z.object({
@@ -19,96 +18,71 @@ const SearchResultItemSchema = z.object({
 const SearchInputSchema = z.object({
   query: z.string().describe('The search query.'),
 });
-export type SearchInput = z.infer<typeof SearchInputSchema>;
+type SearchInput = z.infer<typeof SearchInputSchema>;
 
 const SearchOutputSchema = z.object({
   results: z.array(SearchResultItemSchema).describe('A list of search results.'),
 });
-export type SearchOutput = z.infer<typeof SearchOutputSchema>;
+type SearchOutput = z.infer<typeof SearchOutputSchema>;
 
-// This is a placeholder for a real web search API call.
-// You could replace this with an API like Google Custom Search, Bing, etc.
+// This function now directly calls your custom "Mega-Brain" network.
 async function performWebSearch(query: string): Promise<SearchOutput> {
-  console.log(`Performing a web search for: ${query}`);
-  // In a real implementation, you would fetch results from a search API.
-  // For this example, we'll return some realistic-looking dummy data.
-  return {
-    results: [
-      {
-        title: `Official Documentation for: ${query}`,
-        url: `https://example.com/search?q=${encodeURIComponent(query)}`,
-        snippet: `Find the most up-to-date information and official documentation for ${query}. Get started with tutorials, guides, and API references.`,
-      },
-      {
-        title: `Understanding ${query} | A Beginner's Guide`,
-        url: `https://another-site.com/guides/${encodeURIComponent(query)}`,
-        snippet: `This comprehensive guide breaks down everything you need to know about ${query}, from the basics to advanced concepts.`,
-      },
-      {
-        title: `Recent News and Articles about ${query}`,
-        url: `https://news-outlet.com/topics/${encodeURIComponent(query)}`,
-        snippet: `Stay informed with the latest news, articles, and discussions surrounding ${query} from top tech journalists.`,
-      },
-    ],
-  };
-}
+  const apiKey = process.env.MEGA_BRAIN_API_KEY;
+  const apiUrl = process.env.MEGA_BRAIN_API_URL;
 
-const webSearchTool = ai.defineTool(
-  {
-    name: 'webSearch',
-    description: 'Performs a web search for a given query and returns a list of results.',
-    inputSchema: z.object({ query: z.string() }),
-    outputSchema: SearchOutputSchema,
-  },
-  async (input) => {
-    return performWebSearch(input.query);
-  }
-);
-
-
-export async function search(input: SearchInput): Promise<SearchOutput> {
-  return searchFlow(input);
-}
-
-const prompt = `You are a helpful AI assistant that can search the web.
-Use the webSearch tool to answer the user's query.
-
-Query: ${"{{query}}"}
-`;
-
-const searchFlow = ai.defineFlow(
-  {
-    name: 'searchFlow',
-    inputSchema: SearchInputSchema,
-    outputSchema: SearchOutputSchema,
-  },
-  async (input) => {
-    const llmResponse = await ai.generate({
-      prompt: prompt,
-      model: 'googleai/gemini-1.5-flash-latest',
-      input: input,
-      tools: [webSearchTool],
-    });
-
-    const toolResponse = llmResponse.toolRequest();
-    if (toolResponse) {
-      const toolOutput = await toolResponse.run();
-      return toolOutput as SearchOutput;
-    }
-    
-    // If the model doesn't request a tool, we can try to force it.
-    const toolRequest = await ai.generate({
-        prompt: `Return a call to the webSearch tool with the query: ${input.query}`,
-        model: 'googleai/gemini-1.5-flash-latest',
-        tools: [webSearchTool]
-    });
-    
-    const forcedToolResponse = toolRequest.toolRequest();
-    if(forcedToolResponse) {
-        const toolOutput = await forcedToolResponse.run();
-        return toolOutput as SearchOutput;
-    }
-    
+  if (!apiKey || !apiUrl) {
+    console.error('Missing MEGA_BRAIN_API_KEY or MEGA_BRAIN_API_URL in .env file');
     return { results: [] };
   }
-);
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ directive: `Perform a web search for: ${query}` }),
+    });
+
+    if (!response.ok) {
+      console.error(`Mega-Brain API request failed with status ${response.status}`);
+      return { results: [] };
+    }
+
+    const responseData = await response.json();
+
+    // Assuming the API returns a JSON string in the 'result' field that needs to be parsed.
+    // This might need adjustment based on the actual API response format.
+    if (responseData.result && typeof responseData.result === 'string') {
+        const searchResults = JSON.parse(responseData.result);
+        // We'll validate the structure of the parsed results.
+        const validatedResults = SearchOutputSchema.safeParse(searchResults);
+        if (validatedResults.success) {
+            return validatedResults.data;
+        } else {
+            console.error("Failed to parse search results from Mega-Brain:", validatedResults.error);
+            return { results: [] };
+        }
+    }
+    
+    // Fallback for other potential response structures
+    const validatedDirect = SearchOutputSchema.safeParse(responseData);
+     if (validatedDirect.success) {
+        return validatedDirect.data;
+     }
+    
+
+    console.error('Unexpected response format from Mega-Brain API:', responseData);
+    return { results: [] };
+
+  } catch (error) {
+    console.error("Error calling Mega-Brain API:", error);
+    return { results: [] };
+  }
+}
+
+export async function search(input: SearchInput): Promise<SearchOutput> {
+  // We now directly call the function that queries your custom network.
+  return performWebSearch(input.query);
+}

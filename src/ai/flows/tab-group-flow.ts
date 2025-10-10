@@ -23,12 +23,12 @@ const TabGroupSchema = z.object({
 const TabGroupInputSchema = z.object({
   interest: z.string().describe("A user's interest to generate tab groups for."),
 });
-export type TabGroupInput = z.infer<typeof TabGroupInputSchema>;
+type TabGroupInput = z.infer<typeof TabGroupInputSchema>;
 
 const TabGroupOutputSchema = z.object({
   groups: z.array(TabGroupSchema).describe('A list of generated tab groups.'),
 });
-export type TabGroupOutput = z.infer<typeof TabGroupOutputSchema>;
+type TabGroupOutput = z.infer<typeof TabGroupOutputSchema>;
 
 export async function getTabGroups(input: TabGroupInput): Promise<TabGroupOutput> {
   return tabGroupFlow(input);
