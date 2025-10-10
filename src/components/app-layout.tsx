@@ -163,7 +163,7 @@ export default function AppLayout({
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleSearch}
             className="w-full bg-background pl-10"
-            placeholder="Search Google or type a URL"
+            placeholder="Search with Citadel or type a URL"
           />
         </div>
       </div>
