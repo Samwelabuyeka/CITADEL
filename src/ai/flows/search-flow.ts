@@ -73,7 +73,6 @@ export async function search(input: SearchInput): Promise<SearchOutput> {
 const prompt = ai.definePrompt({
   name: 'searchPrompt',
   input: {schema: SearchInputSchema},
-  output: {schema: SearchOutputSchema},
   tools: [webSearchTool],
   prompt: `You are a search engine. Given a query, use the webSearch tool to get a list of results. Do not make up results; only use the tool.
 
@@ -87,7 +86,11 @@ const searchFlow = ai.defineFlow(
     outputSchema: SearchOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    const llmResponse = await prompt(input);
+    const toolResponse = llmResponse.toolRequest?.tool?.('webSearch')?.output;
+    if (toolResponse) {
+      return toolResponse;
+    }
+    return { results: [] };
   }
 );
