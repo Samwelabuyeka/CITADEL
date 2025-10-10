@@ -52,29 +52,16 @@ async function performWebSearch(query: string): Promise<SearchOutput> {
 
     const responseData = await response.json();
 
-    // Assuming the API returns a JSON string in the 'result' field that needs to be parsed.
-    // This might need adjustment based on the actual API response format.
-    if (responseData.result && typeof responseData.result === 'string') {
-        const searchResults = JSON.parse(responseData.result);
-        // We'll validate the structure of the parsed results.
-        const validatedResults = SearchOutputSchema.safeParse(searchResults);
-        if (validatedResults.success) {
-            return validatedResults.data;
-        } else {
-            console.error("Failed to parse search results from Mega-Brain:", validatedResults.error);
-            return { results: [] };
-        }
+    // Validate the structure of the parsed results directly.
+    const validatedResults = SearchOutputSchema.safeParse(responseData);
+    if (validatedResults.success) {
+        return validatedResults.data;
+    } else {
+        // Log the validation error and the data that failed.
+        console.error("Failed to parse search results from Mega-Brain:", validatedResults.error);
+        console.error("Received data:", responseData);
+        return { results: [] };
     }
-    
-    // Fallback for other potential response structures
-    const validatedDirect = SearchOutputSchema.safeParse(responseData);
-     if (validatedDirect.success) {
-        return validatedDirect.data;
-     }
-    
-
-    console.error('Unexpected response format from Mega-Brain API:', responseData);
-    return { results: [] };
 
   } catch (error) {
     console.error("Error calling Mega-Brain API:", error);
