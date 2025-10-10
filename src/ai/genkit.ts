@@ -1,5 +1,4 @@
 import {genkit, GenerationCommonConfig} from 'genkit';
-import {dotprompt} from '@genkit-ai/dotprompt';
 import {defineModel, ModelReference} from 'genkit/models';
 import {z} from 'zod';
 
@@ -71,7 +70,6 @@ const megaBrainModel = defineModel(
 
 export const ai = genkit({
   plugins: [
-    dotprompt(),
   ],
   // We register our custom model here.
   models: [megaBrainModel],
