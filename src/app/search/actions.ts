@@ -7,7 +7,7 @@ export async function getSearchResults(query: string) {
     const results = await search({ query });
     return results;
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     return { results: [] };
   }
 }
