@@ -11,8 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "../ui/separator";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
+import { useEffect, useState } from "react";
 
-const dailyBlockedData = [
+const generateWeeklyData = () => [
   { name: "Mon", total: Math.floor(Math.random() * 200) + 50 },
   { name: "Tue", total: Math.floor(Math.random() * 200) + 50 },
   { name: "Wed", total: Math.floor(Math.random() * 200) + 50 },
@@ -20,9 +21,15 @@ const dailyBlockedData = [
   { name: "Fri", total: Math.floor(Math.random() * 200) + 50 },
   { name: "Sat", total: Math.floor(Math.random() * 200) + 50 },
   { name: "Sun", total: Math.floor(Math.random() * 200) + 50 },
-]
+];
 
 export function PrivacyShieldWidget() {
+  const [dailyBlockedData, setDailyBlockedData] = useState<any[]>([]);
+
+  useEffect(() => {
+    setDailyBlockedData(generateWeeklyData());
+  }, []);
+
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
