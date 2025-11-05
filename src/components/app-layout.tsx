@@ -13,7 +13,8 @@ import {
   Lock,
   Plus,
   X,
-  Shield,
+  ShieldCheck,
+  History,
 } from 'lucide-react';
 import { Icons } from './icons';
 import { UserNav } from './user-nav';
@@ -27,6 +28,8 @@ import {
 } from '@/components/ui/menubar';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Separator } from './ui/separator';
 
 type Tab = {
   id: string;
@@ -217,7 +220,7 @@ export default function AppLayout({
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon">
-            <Shield className="h-5 w-5 text-muted-foreground" />
+            <History className="h-5 w-5 text-muted-foreground" />
           </Button>
           <Settings className="h-5 w-5 text-muted-foreground cursor-pointer" />
           <UserNav />
@@ -262,7 +265,33 @@ export default function AppLayout({
           <Home className="h-4 w-4" />
         </Button>
         <div className="relative flex-grow">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Popover>
+                <PopoverTrigger asChild>
+                    <button className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground">
+                        <Lock />
+                    </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80">
+                    <div className="grid gap-4">
+                        <div className="space-y-2">
+                            <h4 className="font-medium leading-none text-primary">Connection is secure</h4>
+                            <p className="text-sm text-muted-foreground">
+                                Your information (for example, passwords or credit card numbers) is private when it is sent to this site.
+                            </p>
+                        </div>
+                        <Separator />
+                         <div className="grid gap-2">
+                            <div className="flex items-start gap-4">
+                                <ShieldCheck className="h-6 w-6 text-green-500 mt-1" />
+                                <div>
+                                    <p className="text-sm font-medium">Certificate is valid</p>
+                                    <p className="text-sm text-muted-foreground">Issued by: Citadel Root CA</p>
+                                </div>
+                            </div>
+                         </div>
+                    </div>
+                </PopoverContent>
+            </Popover>
           <Input
             type="text"
             value={inputValue}
@@ -290,5 +319,6 @@ export default function AppLayout({
     </div>
   );
 }
+    
 
     
