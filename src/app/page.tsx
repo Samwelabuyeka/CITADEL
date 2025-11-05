@@ -3,7 +3,7 @@ import { Dashboard } from "@/components/dashboard/dashboard";
 
 export default function BrowserPage() {
   return (
-    <AppLayout currentUrl="citadel://dashboard">
+    <AppLayout>
       <Dashboard />
     </AppLayout>
   );

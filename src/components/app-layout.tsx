@@ -1,11 +1,10 @@
 "use client";
 
-import React from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Settings,
-  UserCircle,
   ArrowLeft,
   ArrowRight,
   RefreshCw,
@@ -28,32 +27,96 @@ import {
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 
-const TABS = [
+type Tab = {
+  id: string;
+  title: string;
+  href: string;
+};
+
+const INITIAL_TABS: Tab[] = [
   { id: 'dashboard', title: 'Dashboard', href: '/' },
   { id: 'privacy-assistant', title: 'Privacy Assistant', href: '/privacy-assistant' },
 ];
 
 export default function AppLayout({
   children,
-  currentUrl: initialUrl,
 }: {
   children: React.ReactNode;
-  currentUrl?: string;
 }) {
   const router = useRouter();
-  const [inputValue, setInputValue] = React.useState(initialUrl || '');
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  React.useEffect(() => {
-    if (initialUrl) {
-      setInputValue(initialUrl);
+  const [tabs, setTabs] = useState<Tab[]>(INITIAL_TABS);
+  const [activeTabId, setActiveTabId] = useState<string>('dashboard');
+  const [inputValue, setInputValue] = useState('');
+
+  const getUrlFromPath = (path: string, params: URLSearchParams): string => {
+    if (path === '/') return 'citadel://dashboard';
+    if (path.startsWith('/search')) {
+      const query = params.get('q') || '';
+      return `citadel://search?q=${query}`;
     }
-  }, [initialUrl]);
+    if (path.startsWith('/privacy-assistant')) return 'citadel://privacy-assistant';
+    return '';
+  };
+  
+  useEffect(() => {
+    const currentUrl = getUrlFromPath(pathname, searchParams);
+    setInputValue(currentUrl);
+
+    if (pathname === '/') {
+      setActiveTabId('dashboard');
+    } else if (pathname.startsWith('/privacy-assistant')) {
+      setActiveTabId('privacy-assistant');
+    } else if (pathname.startsWith('/search')) {
+      const query = searchParams.get('q') || '';
+      const searchTabId = `search-${query}`;
+      const existingTab = tabs.find(t => t.id === searchTabId);
+      if (!existingTab) {
+        setTabs(prevTabs => [...prevTabs, { id: searchTabId, title: `Search: ${query}`, href: `/search?q=${query}` }]);
+      }
+      setActiveTabId(searchTabId);
+    }
+  }, [pathname, searchParams, tabs]);
+
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      router.push(`/search?q=${inputValue}`);
+      const isUrl = inputValue.startsWith('http://') || inputValue.startsWith('https://');
+      if (isUrl) {
+        // In a real browser, we would navigate. For now, let's just log it.
+        console.log(`Navigating to: ${inputValue}`);
+      } else {
+        router.push(`/search?q=${inputValue.replace('citadel://search?q=', '')}`);
+      }
     }
   };
+
+  const handleCloseTab = (e: React.MouseEvent, tabId: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const tabIndex = tabs.findIndex(t => t.id === tabId);
+    if (tabIndex === -1) return;
+
+    // Prevent closing the last tab
+    if (tabs.length === 1) return;
+
+    const newTabs = tabs.filter(t => t.id !== tabId);
+    setTabs(newTabs);
+
+    // If closing the active tab, switch to a new one
+    if (activeTabId === tabId) {
+      const newActiveTab = newTabs[tabIndex] || newTabs[tabIndex - 1] || newTabs[0];
+      if (newActiveTab) {
+        router.push(newActiveTab.href);
+      }
+    }
+  };
+  
+  const handleAddNewTab = () => {
+    router.push('/');
+  }
 
   return (
     <div className="flex flex-col h-screen bg-card">
@@ -67,7 +130,7 @@ export default function AppLayout({
             <MenubarMenu>
               <MenubarTrigger>File</MenubarTrigger>
               <MenubarContent>
-                <MenubarItem>New Tab</MenubarItem>
+                <MenubarItem onClick={handleAddNewTab}>New Tab</MenubarItem>
                 <MenubarItem>New Window</MenubarItem>
                 <MenubarSeparator />
                 <MenubarItem>Close Tab</MenubarItem>
@@ -119,23 +182,23 @@ export default function AppLayout({
       {/* Tabs */}
       <div className="bg-card border-b">
         <div className="flex items-center">
-          {TABS.map((tab) => (
+          {tabs.map((tab) => (
             <Link
               key={tab.id}
               href={tab.href}
               className={`flex items-center h-10 border-b-2 px-4 text-sm ${
-                initialUrl === `citadel://${tab.id}`
+                activeTabId === tab.id
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               {tab.title}
-              <Button variant="ghost" size="icon" className="w-6 h-6 ml-2 hover:bg-muted-foreground/20">
+              <Button variant="ghost" size="icon" className="w-6 h-6 ml-2 hover:bg-muted-foreground/20" onClick={(e) => handleCloseTab(e, tab.id)}>
                 <X className="w-4 h-4" />
               </Button>
             </Link>
           ))}
-          <Button variant="ghost" size="icon" className="w-8 h-8 ml-1">
+          <Button variant="ghost" size="icon" className="w-8 h-8 ml-1" onClick={handleAddNewTab}>
             <Plus className="w-4 h-4" />
           </Button>
         </div>

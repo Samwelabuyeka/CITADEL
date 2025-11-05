@@ -3,10 +3,10 @@ import { SearchResults } from "./search-results";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function SearchPage({ searchParams }: { searchParams: { q: string } }) {
-  const query = searchParams.q || "";
+export default function SearchPage({ searchParams }: { searchParams?: { q?: string } }) {
+  const query = searchParams?.q || "";
   return (
-    <AppLayout currentUrl={`citadel://search?q=${query}`}>
+    <AppLayout>
       <div className="p-6">
         <Suspense fallback={<SearchResultsSkeleton />}>
           <SearchResults query={query} />
