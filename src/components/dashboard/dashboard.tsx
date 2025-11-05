@@ -1,8 +1,23 @@
+
+"use client";
+
+import { useEffect } from "react";
+import { useAuth } from "@/context/auth-context";
 import { DynamicTabsWidget } from "@/components/dashboard/dynamic-tabs-widget";
 import { PrivacyShieldWidget } from "@/components/dashboard/privacy-shield-widget";
 import { WorkspaceWidget } from "@/components/dashboard/workspace-widget";
 
 export function Dashboard() {
+  const { user, isUserLoading, login } = useAuth();
+
+  useEffect(() => {
+    // When the component mounts and we're done checking for a user,
+    // if no user is found, automatically trigger the login flow.
+    if (!isUserLoading && !user) {
+      login();
+    }
+  }, [isUserLoading, user, login]);
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
