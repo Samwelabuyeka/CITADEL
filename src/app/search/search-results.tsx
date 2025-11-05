@@ -1,10 +1,11 @@
+
 import { getSearchResults } from "./actions";
 
 export async function SearchResults({ query }: { query: string }) {
   if (!query) {
     return (
       <div className="text-center text-muted-foreground">
-        <p>Enter a search query in the address bar to begin.</p>
+        <p>Enter a search query to begin.</p>
       </div>
     );
   }

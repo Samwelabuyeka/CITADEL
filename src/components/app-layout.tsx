@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -31,11 +32,12 @@ type Tab = {
   id: string;
   title: string;
   href: string;
+  isSite: boolean;
 };
 
 const INITIAL_TABS: Tab[] = [
-  { id: 'dashboard', title: 'Dashboard', href: '/' },
-  { id: 'privacy-assistant', title: 'Privacy Assistant', href: '/privacy-assistant' },
+  { id: 'dashboard', title: 'Dashboard', href: '/', isSite: false },
+  { id: 'privacy-assistant', title: 'Privacy Assistant', href: '/privacy-assistant', isSite: false },
 ];
 
 export default function AppLayout({
@@ -50,14 +52,17 @@ export default function AppLayout({
   const [tabs, setTabs] = useState<Tab[]>(INITIAL_TABS);
   const [activeTabId, setActiveTabId] = useState<string>('dashboard');
   const [inputValue, setInputValue] = useState('');
-
+  
   const getUrlFromPath = (path: string, params: URLSearchParams): string => {
     if (path === '/') return 'citadel://dashboard';
     if (path.startsWith('/search')) {
       const query = params.get('q') || '';
-      return `citadel://search?q=${query}`;
+      return `https://www.google.com/search?q=${query}`;
     }
     if (path.startsWith('/privacy-assistant')) return 'citadel://privacy-assistant';
+    if (path.startsWith('/site')) {
+      return params.get('url') || '';
+    }
     return '';
   };
   
@@ -65,18 +70,34 @@ export default function AppLayout({
     const currentUrl = getUrlFromPath(pathname, searchParams);
     setInputValue(currentUrl);
 
+    let currentTabId = '';
     if (pathname === '/') {
-      setActiveTabId('dashboard');
+      currentTabId = 'dashboard';
     } else if (pathname.startsWith('/privacy-assistant')) {
-      setActiveTabId('privacy-assistant');
+      currentTabId = 'privacy-assistant';
     } else if (pathname.startsWith('/search')) {
       const query = searchParams.get('q') || '';
-      const searchTabId = `search-${query}`;
-      const existingTab = tabs.find(t => t.id === searchTabId);
+      currentTabId = `search-${query}`;
+      const existingTab = tabs.find(t => t.id === currentTabId);
       if (!existingTab) {
-        setTabs(prevTabs => [...prevTabs, { id: searchTabId, title: `Search: ${query}`, href: `/search?q=${query}` }]);
+        setTabs(prevTabs => [...prevTabs, { id: currentTabId, title: `Search: ${query}`, href: `/search?q=${query}`, isSite: false }]);
       }
-      setActiveTabId(searchTabId);
+    } else if (pathname.startsWith('/site')) {
+        const url = searchParams.get('url') || '';
+        currentTabId = `site-${url}`;
+        const existingTab = tabs.find(t => t.id === currentTabId);
+        if (!existingTab && url) {
+            try {
+                const hostname = new URL(url).hostname;
+                setTabs(prevTabs => [...prevTabs, { id: currentTabId, title: hostname, href: `/site?url=${encodeURIComponent(url)}`, isSite: true }]);
+            } catch (e) {
+                console.error("Invalid URL:", url);
+                setTabs(prevTabs => [...prevTabs, { id: currentTabId, title: 'Invalid URL', href: `/site?url=${encodeURIComponent(url)}`, isSite: true }]);
+            }
+        }
+    }
+    if (currentTabId) {
+        setActiveTabId(currentTabId);
     }
   }, [pathname, searchParams, tabs]);
 
@@ -85,10 +106,9 @@ export default function AppLayout({
     if (e.key === 'Enter') {
       const isUrl = inputValue.startsWith('http://') || inputValue.startsWith('https://');
       if (isUrl) {
-        // In a real browser, we would navigate. For now, let's just log it.
-        console.log(`Navigating to: ${inputValue}`);
+        router.push(`/site?url=${encodeURIComponent(inputValue)}`);
       } else {
-        router.push(`/search?q=${inputValue.replace('citadel://search?q=', '')}`);
+        router.push(`/search?q=${inputValue}`);
       }
     }
   };
@@ -99,13 +119,11 @@ export default function AppLayout({
     const tabIndex = tabs.findIndex(t => t.id === tabId);
     if (tabIndex === -1) return;
 
-    // Prevent closing the last tab
     if (tabs.length === 1) return;
 
     const newTabs = tabs.filter(t => t.id !== tabId);
     setTabs(newTabs);
 
-    // If closing the active tab, switch to a new one
     if (activeTabId === tabId) {
       const newActiveTab = newTabs[tabIndex] || newTabs[tabIndex - 1] || newTabs[0];
       if (newActiveTab) {
@@ -117,6 +135,8 @@ export default function AppLayout({
   const handleAddNewTab = () => {
     router.push('/');
   }
+
+  const activeTab = tabs.find(tab => tab.id === activeTabId);
 
   return (
     <div className="flex flex-col h-screen bg-card">
@@ -179,7 +199,6 @@ export default function AppLayout({
         </div>
       </header>
       
-      {/* Tabs */}
       <div className="bg-card border-b">
         <div className="flex items-center">
           {tabs.map((tab) => (
@@ -204,7 +223,6 @@ export default function AppLayout({
         </div>
       </div>
       
-      {/* Address Bar */}
       <div className="flex items-center gap-2 p-2 border-b bg-card">
         <Button variant="ghost" size="icon" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4" />
@@ -226,12 +244,23 @@ export default function AppLayout({
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleSearch}
             className="w-full bg-background pl-10"
-            placeholder="Search with Citadel or type a URL"
+            placeholder="Search or type a URL"
           />
         </div>
       </div>
 
-      <main className="flex-1 flex flex-col bg-background overflow-auto">{children}</main>
+      <main className="flex-1 flex flex-col bg-background overflow-auto">
+        {activeTab?.isSite ? (
+            <iframe
+                src={getUrlFromPath(pathname, searchParams)}
+                className="w-full h-full border-0"
+                title="Browser content"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            />
+        ) : (
+            children
+        )}
+      </main>
     </div>
   );
 }

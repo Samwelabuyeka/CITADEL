@@ -1,3 +1,4 @@
+
 import AppLayout from "@/components/app-layout";
 import { SearchResults } from "./search-results";
 import { Suspense } from "react";
