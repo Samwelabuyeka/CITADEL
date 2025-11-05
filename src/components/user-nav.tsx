@@ -1,6 +1,5 @@
 "use client";
 
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,16 +14,18 @@ import {
 import { useAuth } from "@/context/auth-context";
 import { LogIn } from "lucide-react";
 
-const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar-1');
-
 export function UserNav() {
-  const { isAuthenticated, login, logout } = useAuth();
+  const { user, isUserLoading, login, logout } = useAuth();
 
-  if (!isAuthenticated) {
+  if (isUserLoading) {
+    return <Button variant="outline" disabled>Loading...</Button>;
+  }
+
+  if (!user) {
     return (
       <Button variant="outline" onClick={login}>
         <LogIn className="mr-2 h-4 w-4" />
-        Log In
+        Log In with Google
       </Button>
     );
   }
@@ -34,17 +35,17 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            {userAvatar && <AvatarImage src={userAvatar.imageUrl} alt="User avatar" data-ai-hint={userAvatar.imageHint}/>}
-            <AvatarFallback>CB</AvatarFallback>
+            {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || "User avatar"} />}
+            <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Citadel User</p>
+            <p className="text-sm font-medium leading-none">{user.displayName}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              user@citadel.com
+              {user.email}
             </p>
           </div>
         </DropdownMenuLabel>
