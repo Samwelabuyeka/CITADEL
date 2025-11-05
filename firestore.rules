@@ -8,6 +8,13 @@ service cloud.firestore {
 
       // Only the user themselves can read or update their own profile.
       allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+
+      // Allow users to read and write to their own history subcollection.
+      match /history/{historyId} {
+        allow create, read: if request.auth != null && request.auth.uid == userId;
+        // Generally, history is append-only, but allow update/delete for future management features.
+        allow update, delete: if request.auth != null && request.auth.uid == userId;
+      }
     }
   }
 }

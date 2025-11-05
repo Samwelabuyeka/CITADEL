@@ -31,6 +31,9 @@ import { Input } from './ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Separator } from './ui/separator';
 import { TabContext, Tab } from '@/context/tab-context';
+import { useAuth, useFirestore } from '@/firebase';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { collection, serverTimestamp } from 'firebase/firestore';
 
 export default function AppLayout({
   children,
@@ -41,6 +44,8 @@ export default function AppLayout({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const { user } = useAuth();
+  const firestore = useFirestore();
   
   const tabContext = useContext(TabContext);
 
@@ -60,6 +65,7 @@ export default function AppLayout({
       return `https://www.google.com/search?q=${query}`;
     }
     if (path.startsWith('/privacy-assistant')) return 'citadel://privacy-assistant';
+    if (path.startsWith('/history')) return 'citadel://history';
     if (path.startsWith('/site')) {
       return params.get('url') || '';
     }
@@ -73,16 +79,27 @@ export default function AppLayout({
     setInputValue(currentUrl);
 
     let currentTabId = '';
+    let newTab: Tab | null = null;
+    let urlToLog: string | null = null;
+    let titleToLog: string | null = null;
+
+
     if (pathname === '/') {
       currentTabId = 'dashboard';
     } else if (pathname.startsWith('/privacy-assistant')) {
       currentTabId = 'privacy-assistant';
+    } else if (pathname.startsWith('/history')) {
+      currentTabId = 'history';
+      const existingTab = tabs.find(t => t.id === currentTabId);
+      if (!existingTab) {
+          newTab = { id: currentTabId, title: 'History', href: '/history', isSite: false };
+      }
     } else if (pathname.startsWith('/search')) {
       const query = searchParams.get('q') || '';
       currentTabId = `search-${query}`;
       const existingTab = tabs.find(t => t.id === currentTabId);
       if (!existingTab) {
-        setTabs(prevTabs => [...prevTabs, { id: currentTabId, title: `Search: ${query}`, href: `/search?q=${query}`, isSite: false }]);
+        newTab = { id: currentTabId, title: `Search: ${query}`, href: `/search?q=${query}`, isSite: false };
       }
     } else if (pathname.startsWith('/site')) {
         const url = searchParams.get('url') || '';
@@ -90,19 +107,32 @@ export default function AppLayout({
         const existingTab = tabs.find(t => t.id === currentTabId);
         if (!existingTab && url) {
             try {
-                const hostname = new URL(url).hostname;
-                setTabs(prevTabs => [...prevTabs, { id: currentTabId, title: hostname, href: `/site?url=${encodeURIComponent(url)}`, isSite: true }]);
+                titleToLog = new URL(url).hostname;
+                urlToLog = url;
+                newTab = { id: currentTabId, title: titleToLog, href: `/site?url=${encodeURIComponent(url)}`, isSite: true };
             } catch (e) {
                 console.error("Invalid URL:", url);
-                setTabs(prevTabs => [...prevTabs, { id: currentTabId, title: 'Invalid URL', href: `/site?url=${encodeURIComponent(url)}`, isSite: true }]);
+                newTab = { id: currentTabId, title: 'Invalid URL', href: `/site?url=${encodeURIComponent(url)}`, isSite: true };
             }
         }
     }
-    if (currentTabId) {
-        setActiveTabId(currentTabId);
+
+    if (newTab) {
+      setTabs(prevTabs => [...prevTabs, newTab!]);
     }
+    if (currentTabId) {
+      setActiveTabId(currentTabId);
+    }
+    if (user && firestore && urlToLog && titleToLog) {
+      const historyCollectionRef = collection(firestore, 'users', user.uid, 'history');
+      addDocumentNonBlocking(historyCollectionRef, {
+          url: urlToLog,
+          title: titleToLog,
+          visitedAt: serverTimestamp(),
+      });
+  }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, searchParams, setTabs, setActiveTabId]);
+  }, [pathname, searchParams, user, firestore]);
 
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -203,7 +233,7 @@ export default function AppLayout({
             <MenubarMenu>
               <MenubarTrigger>History</MenubarTrigger>
               <MenubarContent>
-                <MenubarItem>Show Full History</MenubarItem>
+                <MenubarItem onClick={() => router.push('/history')}>Show Full History</MenubarItem>
               </MenubarContent>
             </MenubarMenu>
             <MenubarMenu>
@@ -215,8 +245,10 @@ export default function AppLayout({
           </Menubar>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon">
-            <History className="h-5 w-5 text-muted-foreground" />
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/history">
+              <History className="h-5 w-5 text-muted-foreground" />
+            </Link>
           </Button>
           <Settings className="h-5 w-5 text-muted-foreground cursor-pointer" />
           <UserNav />

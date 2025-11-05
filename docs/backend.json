@@ -35,6 +35,29 @@
         "email",
         "displayName"
       ]
+    },
+    "HistoryItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "HistoryItem",
+      "type": "object",
+      "description": "Represents a single entry in a user's browsing history.",
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "The URL of the visited page."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the visited page."
+        },
+        "visitedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the page was visited."
+        }
+      },
+      "required": ["url", "title", "visitedAt"]
     }
   },
   "auth": {
@@ -46,6 +69,10 @@
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/UserProfile" },
       "description": "Stores public user profile information. The document ID is the user's Firebase Authentication UID."
+    },
+    "/users/{userId}/history/{historyId}": {
+      "schema": { "$ref": "#/entities/HistoryItem" },
+      "description": "Stores the browsing history for a specific user."
     }
   }
 }
