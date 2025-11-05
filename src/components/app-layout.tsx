@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -48,6 +48,7 @@ export default function AppLayout({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const [tabs, setTabs] = useState<Tab[]>(INITIAL_TABS);
   const [activeTabId, setActiveTabId] = useState<string>('dashboard');
@@ -66,6 +67,8 @@ export default function AppLayout({
     return '';
   };
   
+  const activeTab = tabs.find(tab => tab.id === activeTabId);
+
   useEffect(() => {
     const currentUrl = getUrlFromPath(pathname, searchParams);
     setInputValue(currentUrl);
@@ -99,7 +102,8 @@ export default function AppLayout({
     if (currentTabId) {
         setActiveTabId(currentTabId);
     }
-  }, [pathname, searchParams, tabs]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, searchParams]);
 
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -117,9 +121,7 @@ export default function AppLayout({
     e.stopPropagation();
     e.preventDefault();
     const tabIndex = tabs.findIndex(t => t.id === tabId);
-    if (tabIndex === -1) return;
-
-    if (tabs.length === 1) return;
+    if (tabIndex === -1 || tabs.length <= 1) return;
 
     const newTabs = tabs.filter(t => t.id !== tabId);
     setTabs(newTabs);
@@ -134,9 +136,32 @@ export default function AppLayout({
   
   const handleAddNewTab = () => {
     router.push('/');
-  }
+  };
 
-  const activeTab = tabs.find(tab => tab.id === activeTabId);
+  const handleBack = () => {
+    if (activeTab?.isSite && iframeRef.current) {
+        iframeRef.current.contentWindow?.history.back();
+    } else {
+        router.back();
+    }
+  };
+
+  const handleForward = () => {
+      if (activeTab?.isSite && iframeRef.current) {
+          iframeRef.current.contentWindow?.history.forward();
+      } else {
+          router.forward();
+      }
+  };
+
+  const handleRefresh = () => {
+      if (activeTab?.isSite && iframeRef.current) {
+          iframeRef.current.contentWindow?.location.reload();
+      } else {
+          router.refresh();
+      }
+  };
+
 
   return (
     <div className="flex flex-col h-screen bg-card">
@@ -224,13 +249,13 @@ export default function AppLayout({
       </div>
       
       <div className="flex items-center gap-2 p-2 border-b bg-card">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+        <Button variant="ghost" size="icon" onClick={handleBack}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={() => router.forward()}>
+        <Button variant="ghost" size="icon" onClick={handleForward}>
           <ArrowRight className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={() => router.refresh()}>
+        <Button variant="ghost" size="icon" onClick={handleRefresh}>
           <RefreshCw className="h-4 w-4" />
         </Button>
         <Button variant="ghost" size="icon" onClick={() => router.push('/')}>
@@ -252,6 +277,7 @@ export default function AppLayout({
       <main className="flex-1 flex flex-col bg-background overflow-auto">
         {activeTab?.isSite ? (
             <iframe
+                ref={iframeRef}
                 src={getUrlFromPath(pathname, searchParams)}
                 className="w-full h-full border-0"
                 title="Browser content"
@@ -264,3 +290,5 @@ export default function AppLayout({
     </div>
   );
 }
+
+    
