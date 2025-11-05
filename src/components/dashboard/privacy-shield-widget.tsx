@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -12,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "../ui/separator";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
 import { useEffect, useState } from "react";
+import { Shield, Ban, Fingerprint } from "lucide-react";
 
 const generateWeeklyData = () => [
   { name: "Mon", total: Math.floor(Math.random() * 200) + 50 },
@@ -39,40 +41,61 @@ export function PrivacyShieldWidget() {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow space-y-4">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <Label htmlFor="tracker-blocker" className="flex flex-col space-y-1">
-              <span>Real-time Tracker Blocker</span>
-              <span className="font-normal leading-snug text-muted-foreground">
-                Block advertising and tracking scripts.
-              </span>
-            </Label>
-            <Switch id="tracker-blocker" defaultChecked />
-          </div>
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <Label htmlFor="script-control" className="flex flex-col space-y-1">
-              <span>Script Control</span>
-              <span className="font-normal leading-snug text-muted-foreground">
-                Manage which websites can run scripts.
-              </span>
-            </Label>
-            <Switch id="script-control" />
-          </div>
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <Label htmlFor="fingerprinting-protection" className="flex flex-col space-y-1">
-              <span>Fingerprinting Protection</span>
-              <span className="font-normal leading-snug text-muted-foreground">
-                Prevent sites from identifying you.
-              </span>
-            </Label>
-            <Switch id="fingerprinting-protection" defaultChecked />
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Card>
+                <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="tracker-blocker" className="text-base font-semibold">Tracker Blocker</Label>
+                        <Switch id="tracker-blocker" defaultChecked />
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center gap-4">
+                        <Shield className="h-8 w-8 text-primary" />
+                        <p className="text-sm text-muted-foreground">
+                            Block ads and tracking scripts.
+                        </p>
+                    </div>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="script-control" className="text-base font-semibold">Script Control</Label>
+                        <Switch id="script-control" />
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center gap-4">
+                        <Ban className="h-8 w-8 text-primary" />
+                        <p className="text-sm text-muted-foreground">
+                            Manage which sites can run scripts.
+                        </p>
+                    </div>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="fingerprinting-protection" className="text-base font-semibold">Anti-Fingerprint</Label>
+                        <Switch id="fingerprinting-protection" defaultChecked />
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center gap-4">
+                        <Fingerprint className="h-8 w-8 text-primary" />
+                        <p className="text-sm text-muted-foreground">
+                            Prevent sites from identifying you.
+                        </p>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
         <Separator className="my-4" />
         <div>
           <h4 className="text-sm font-medium text-muted-foreground mb-2">Trackers Blocked This Week</h4>
-          <ResponsiveContainer width="100%" height={100}>
-            <BarChart data={dailyBlockedData}>
+          <ResponsiveContainer width="100%" height={120}>
+            <BarChart data={dailyBlockedData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
               <XAxis
                 dataKey="name"
                 stroke="hsl(var(--muted-foreground))"
