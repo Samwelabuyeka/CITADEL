@@ -10,9 +10,10 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { TabContext } from "@/context/tab-context";
 import { Layers, Link, Sparkles } from "lucide-react";
 import { Badge } from "../ui/badge";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { getTabGroups } from "@/app/dashboard/actions";
 import { Skeleton } from "../ui/skeleton";
 
@@ -29,10 +30,18 @@ type TabGroup = {
 export function DynamicTabsWidget() {
   const [tabGroups, setTabGroups] = useState<TabGroup[]>([]);
   const [loading, setLoading] = useState(true);
+  const tabContext = useContext(TabContext);
 
   const handleGenerate = async () => {
+    if (!tabContext) return;
+
     setLoading(true);
-    const groups = await getTabGroups({ interest: 'web development' });
+    // Map context tabs to the format expected by the AI flow
+    const flowTabs = tabContext.tabs
+      .filter(t => t.isSite) // Only group actual websites
+      .map(t => ({ title: t.title, url: new URL(t.href, 'http://localhost').searchParams.get('url') || t.href }));
+
+    const groups = await getTabGroups({ tabs: flowTabs });
     if (groups) {
       setTabGroups(groups.groups);
     }
@@ -41,7 +50,8 @@ export function DynamicTabsWidget() {
 
   useEffect(() => {
     handleGenerate();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabContext?.tabs]);
 
   return (
     <Card className="h-full flex flex-col">
@@ -76,7 +86,7 @@ export function DynamicTabsWidget() {
               </div>
             ))}
           </div>
-        ) : (
+        ) : tabGroups.length > 0 ? (
           tabGroups.map((group, index) => (
             <div key={index}>
               <div className="space-y-4">
@@ -103,6 +113,16 @@ export function DynamicTabsWidget() {
               {index < tabGroups.length - 1 && <Separator className="mt-6" />}
             </div>
           ))
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center text-center">
+              <div className="mb-4 rounded-full border border-dashed p-4">
+                <Layers className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-semibold">No Groups Generated</h3>
+              <p className="text-muted-foreground">
+                Open some website tabs to see AI-powered groups.
+              </p>
+            </div>
         )}
       </CardContent>
       <CardFooter>

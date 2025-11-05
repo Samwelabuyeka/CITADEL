@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview An AI flow that generates tab groups based on a user's interest.
+ * @fileOverview An AI flow that generates tab groups based on a user's open tabs.
  *
  * - getTabGroups - A function that handles the tab group generation process.
  * - TabGroupInput - The input type for the getTabGroups function.
@@ -21,7 +21,7 @@ const TabGroupSchema = z.object({
 });
 
 const TabGroupInputSchema = z.object({
-  interest: z.string().describe("A user's interest to generate tab groups for."),
+  tabs: z.array(TabSchema).describe('A list of currently open browser tabs to be grouped.'),
 });
 type TabGroupInput = z.infer<typeof TabGroupInputSchema>;
 
@@ -31,6 +31,10 @@ const TabGroupOutputSchema = z.object({
 type TabGroupOutput = z.infer<typeof TabGroupOutputSchema>;
 
 export async function getTabGroups(input: TabGroupInput): Promise<TabGroupOutput> {
+  // If there are no tabs or only one tab, no need to call the AI.
+  if (input.tabs.length <= 1) {
+    return { groups: [] };
+  }
   return tabGroupFlow(input);
 }
 
@@ -38,11 +42,16 @@ const prompt = ai.definePrompt({
   name: 'tabGroupPrompt',
   input: {schema: TabGroupInputSchema},
   output: {schema: TabGroupOutputSchema},
-  prompt: `You are an assistant that creates groups of browser tabs for a user based on their interests.
+  prompt: `You are an assistant that creates groups of browser tabs for a user based on their currently open tabs.
   
-  Generate 3 tab groups related to the following interest: {{{interest}}}.
-  Each group should have a name and between 2 and 4 tabs.
-  Each tab must have a title and a valid URL.`,
+  Analyze the following list of open tabs and organize them into logical groups. Each group should have a descriptive name. Only include tabs from the provided list.
+
+  Open Tabs:
+  {{#each tabs}}
+  - Title: "{{title}}", URL: "{{url}}"
+  {{/each}}
+  
+  Generate up to 3 groups. Each group must have a name and contain a list of the tabs that belong to it.`,
 });
 
 const tabGroupFlow = ai.defineFlow(

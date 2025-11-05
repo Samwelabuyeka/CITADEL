@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -30,18 +30,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Separator } from './ui/separator';
-
-type Tab = {
-  id: string;
-  title: string;
-  href: string;
-  isSite: boolean;
-};
-
-const INITIAL_TABS: Tab[] = [
-  { id: 'dashboard', title: 'Dashboard', href: '/', isSite: false },
-  { id: 'privacy-assistant', title: 'Privacy Assistant', href: '/privacy-assistant', isSite: false },
-];
+import { TabContext, Tab } from '@/context/tab-context';
 
 export default function AppLayout({
   children,
@@ -52,9 +41,16 @@ export default function AppLayout({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  
+  const tabContext = useContext(TabContext);
 
-  const [tabs, setTabs] = useState<Tab[]>(INITIAL_TABS);
-  const [activeTabId, setActiveTabId] = useState<string>('dashboard');
+  if (!tabContext) {
+    // This should not happen if the provider is set up correctly in layout.tsx
+    return <div>Loading...</div>;
+  }
+  
+  const { tabs, setTabs, activeTabId, setActiveTabId } = tabContext;
+  
   const [inputValue, setInputValue] = useState('');
   
   const getUrlFromPath = (path: string, params: URLSearchParams): string => {
@@ -106,7 +102,7 @@ export default function AppLayout({
         setActiveTabId(currentTabId);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, setTabs, setActiveTabId]);
 
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
