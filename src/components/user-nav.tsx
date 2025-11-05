@@ -1,3 +1,5 @@
+"use client";
+
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -10,10 +12,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/context/auth-context";
+import { LogIn } from "lucide-react";
 
 const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar-1');
 
 export function UserNav() {
+  const { isAuthenticated, login, logout } = useAuth();
+
+  if (!isAuthenticated) {
+    return (
+      <Button variant="outline" onClick={login}>
+        <LogIn className="mr-2 h-4 w-4" />
+        Log In
+      </Button>
+    );
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -43,7 +58,7 @@ export function UserNav() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={logout}>
           Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
