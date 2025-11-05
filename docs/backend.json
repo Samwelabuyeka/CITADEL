@@ -1,0 +1,67 @@
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user profile within the Citadel Browser application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity."
+        },
+        "googleId": {
+          "type": "string",
+          "description": "The unique identifier from the user's Google account."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "name": {
+          "type": "string",
+          "description": "User's full name."
+        },
+        "profileImageUrl": {
+          "type": "string",
+          "description": "URL of the user's profile image.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "googleId",
+        "email",
+        "name"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profile information. Uses the user's Firebase Authentication UID as the document ID. Path-based ownership ensures only the authenticated user can access their profile data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication UID of the user."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "This Firestore data structure is designed to support the Citadel Browser application, focusing on user profiles and leveraging Google authentication. The structure emphasizes authorization independence, clarity, and scalability. User data is stored under the `/users/{userId}` path, ensuring private user data remains exclusive to the user. The `UserProfile` entity contains essential user information, including the Google ID, email, name, and profile image URL. This design prioritizes path-based ownership, simplifying security rules and improving efficiency. The absence of collaborative data entities eliminates the need for membership maps and complex authorization schemes. The structure supports robust `list` operations due to its homogeneous security posture, where all documents within the `/users/{userId}` collection share the same security requirements. Denormalization is not explicitly required in this structure since there are no subcollections or cross-document dependencies for authorization."
+  }
+}
