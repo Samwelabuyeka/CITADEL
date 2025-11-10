@@ -1,0 +1,26 @@
+{
+  "name": "Maya Cloud OS - Super Terminal",
+  "image": "mcr.microsoft.com/devcontainers/universal:latest",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "mobs_enabled": true
+    },
+    "ghcr.io/devcontainers/features/go:1": {
+      "version": "1.22"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/kubernetes-helm:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/terraform:1": {
+      "version": "latest"
+    }
+  },
+  "remoteUser": "root",
+  "containerUser": "root",
+  "runArgs": ["--init", "--privileged"],
+  "postCreateCommand": "go mod init citadel || true && go mod tidy"
+}
